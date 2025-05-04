@@ -15,8 +15,8 @@ const endLat = 39.8000;   // Kuzey
 const startLng = 30.4800; // Batı
 const endLng = 30.5700;   // Doğu
 const gridSizeKm = 2;
-const gridSizeLat = gridSizeKm / 110.574; // yaklaşık 0.0181
-const gridSizeLng = gridSizeKm / (111.320 * Math.cos(startLat * Math.PI / 180)); // yaklaşık 0.0222
+const gridSizeLat = gridSizeKm / 110.574;
+const gridSizeLng = gridSizeKm / (111.320 * Math.cos(startLat * Math.PI / 180));
 
 let gridPolygons = [];
 
@@ -42,7 +42,7 @@ for (let lat = startLat; lat < endLat; lat += gridSizeLat) {
     }
 }
 
-// Kullanıcının konumunu takip et
+// Konum takibi
 navigator.geolocation.watchPosition(
     function(position) {
         const lat = position.coords.latitude;
