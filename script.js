@@ -1,5 +1,5 @@
 // Leaflet haritasını başlat
-var map = L.map('map').setView([39.749236, 30.500980], 16); // Başlangıç konumu
+var map = L.map('map').setView([39.749236, 30.500980], 13); // Başlangıç konumu
 
 // OpenStreetMap katmanını ekle
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -9,7 +9,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Kullanıcının konumunu gösteren marker
 var userMarker = L.marker([39.749236, 30.500980]).addTo(map).bindPopup("Senin Konumun (Başlangıç)").openPopup();
 
-// Osmangazi Üniversitesi bölgesi (Mavi olacak)
+// Osmangazi Üniversitesi bölgesi
 var osmangaziCoords = [
     [39.759269, 30.469955], // Kuzeybatı
     [39.759269, 30.501538], // Kuzeydoğu
@@ -23,7 +23,7 @@ var osmangaziPolygon = L.polygon(osmangaziCoords, {
     fillOpacity: 0.4
 }).addTo(map).bindPopup("Osmangazi Üniversitesi Alanı");
 
-// Yeni eklenen Merkez bölgesi (Kırmızı olacak)
+// Merkez bölgesi
 var merkezCoords = [
     [39.785946, 30.512944], // Kuzeybatı
     [39.785946, 30.536315], // Kuzeydoğu
@@ -47,18 +47,18 @@ var zones = [
     {
         name: "Merkez",
         coords: merkezCoords,
-        music: null // Merkez bölgesinde müzik çalmayacak
+        music: null
     }
 ];
 
-// Arka planda çalışacak ses çalar
+// Ses çalar
 var audio = new Audio();
 audio.style.display = "none";
 document.body.appendChild(audio);
 
-var currentZone = null; // Oynayan müziğin alanı
+var currentZone = null;
 
-// Konumun belirli bir alan içinde olup olmadığını kontrol etme fonksiyonu
+// Koordinatların bir alan içinde olup olmadığını kontrol et
 function isInsideZone(lat, lon, zoneCoords) {
     let inside = false;
     for (let i = 0, j = zoneCoords.length - 1; i < zoneCoords.length; j = i++) {
@@ -72,10 +72,10 @@ function isInsideZone(lat, lon, zoneCoords) {
     return inside;
 }
 
-// BAŞLANGIÇTA MANUEL KONUM KONTROLÜ (Osmangazi Üniversitesi içinde başlat)
+// İlk konum kontrolü
 checkLocation(39.749236, 30.500980);
 
-// Kullanıcının konumunu sürekli takip et
+// Gerçek zamanlı konum takibi
 navigator.geolocation.watchPosition(
     function(position) {
         var lat = position.coords.latitude;
@@ -83,7 +83,6 @@ navigator.geolocation.watchPosition(
 
         console.log(`Güncellenen Konum: ${lat}, ${lon}`);
 
-        // Marker'ı güncelle
         userMarker.setLatLng([lat, lon]).bindPopup("Güncellenen Konum").openPopup();
 
         checkLocation(lat, lon);
@@ -94,18 +93,16 @@ navigator.geolocation.watchPosition(
     { enableHighAccuracy: true }
 );
 
-// Konumu kontrol eden fonksiyon
+// Konuma göre müzik ve alan yönetimi
 function checkLocation(lat, lon) {
     let insideZone = null;
 
-    // Alan içinde olup olmadığını kontrol et
     zones.forEach(zone => {
         if (isInsideZone(lat, lon, zone.coords)) {
             insideZone = zone;
         }
     });
 
-    // Eğer merkez bölgesindeyse müziği durdur
     if (insideZone && insideZone.name === "Merkez") {
         if (currentZone) {
             audio.pause();
@@ -115,34 +112,59 @@ function checkLocation(lat, lon) {
         return;
     }
 
-    // Eğer yeni bir bölgeye girildiyse müziği değiştir ve alan rengini değiştir
     if (insideZone && insideZone !== currentZone) {
         currentZone = insideZone;
-        
+
         if (insideZone.music) {
             audio.src = currentZone.music;
             audio.load();
             audio.play().catch(err => console.log("Oynatma hatası:", err));
         }
 
-        // Osmangazi alanını mavi yap
         if (insideZone.name === "Osmangazi Üniversitesi") {
             osmangaziPolygon.setStyle({ color: "blue", fillColor: "#6666ff" });
         }
 
-    } 
-    // Eğer bölgeden çıktıysa müziği durdur ve rengi kırmızıya döndür
-    else if (!insideZone && currentZone) {
+    } else if (!insideZone && currentZone) {
         audio.pause();
         audio.currentTime = 0;
         currentZone = null;
 
-        // Osmangazi alanını tekrar kırmızı yap
         osmangaziPolygon.setStyle({ color: "red", fillColor: "#ff6666" });
     }
 }
 
-// Tarayıcı otomatik oynatmayı engellemesin diye sayfaya tıklama bekle
+// Otomatik oynatma engelini aşmak için kullanıcı etkileşimi
 document.addEventListener("click", function() {
     audio.play().catch(error => console.log("Oynatma hatası:", error));
 });
+
+// 🔲 Eskişehir'i 5x5 km'lik karelere böl
+const baseLat = 39.70;
+const baseLng = 30.40;
+const kmToDegrees = 0.045; // ~5km
+const rows = 5;
+const cols = 5;
+
+for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+        let lat1 = baseLat + (i * kmToDegrees);
+        let lng1 = baseLng + (j * kmToDegrees);
+        let lat2 = lat1 + kmToDegrees;
+        let lng2 = lng1 + kmToDegrees;
+
+        let squareCoords = [
+            [lat1, lng1],
+            [lat1, lng2],
+            [lat2, lng2],
+            [lat2, lng1]
+        ];
+
+        L.polygon(squareCoords, {
+            color: "#444",
+            weight: 1,
+            fillColor: "#ccc",
+            fillOpacity: 0.1
+        }).addTo(map).bindPopup(`Grid: ${i + 1},${j + 1}`);
+    }
+}
